@@ -50,6 +50,7 @@ function categoryBadge(cat) {
     'Subscriptions': 'subscription',
     'Other': 'other',
     'Payment': 'payment',
+    'Income': 'income',
   };
   const cls = map[cat] || 'other';
   return `<span class="badge badge-${cls}">${cat}</span>`;
@@ -169,7 +170,7 @@ function renderDashboard() {
       <div class="value positive">${fmt(totalBank)}</div>
     </div>
     <div class="summary-card">
-      <div class="label">Total CC Owed</div>
+      <div class="label">Total Credit Owed</div>
       <div class="value negative">${fmt(totalCC)}</div>
     </div>
     <div class="summary-card">
@@ -478,30 +479,73 @@ function deleteExpense(id) {
   showToast('Expense deleted.', 'error');
 }
 
-/* ─── Transactions / CC Payments ────────────────── */
+/* ─── Transactions / CC Payments & Income ───────── */
 function renderTransactions() {
   populateAccountDropdown('m-pay-account');
   populateCardDropdown('m-pay-card');
+  populateAccountDropdown('m-inc-account');
   document.getElementById('m-pay-date').value = today();
+  document.getElementById('m-inc-date').value = today();
 
   const list = [...state.transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
   const tbody = document.getElementById('transactions-tbody');
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No transactions yet. Make a credit card payment above.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No transactions yet.</div></td></tr>';
     return;
   }
-  tbody.innerHTML = list.map(t => `
-    <tr>
-      <td>${t.date}</td>
-      <td>${categoryBadge('Payment')}</td>
-      <td>CC Payment</td>
-      <td>${getSourceLabel(t.fromAccount)}</td>
-      <td>${getSourceLabel(t.toCard)}</td>
-      <td class="payment-cell">-${fmt(t.amount)}</td>
-      <td><button class="btn-icon delete" onclick="deleteTransaction('${t.id}')">Del</button></td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = list.map(t => {
+    if (t.type === 'income') {
+      return `
+        <tr>
+          <td>${t.date}</td>
+          <td>${categoryBadge('Income')}</td>
+          <td>${t.description}</td>
+          <td>${getSourceLabel(t.toAccount)}</td>
+          <td>—</td>
+          <td class="income-cell">+${fmt(t.amount)}</td>
+          <td><button class="btn-icon delete" onclick="deleteTransaction('${t.id}')">Del</button></td>
+        </tr>`;
+    }
+    return `
+      <tr>
+        <td>${t.date}</td>
+        <td>${categoryBadge('Payment')}</td>
+        <td>CC Payment</td>
+        <td>${getSourceLabel(t.fromAccount)}</td>
+        <td>${getSourceLabel(t.toCard)}</td>
+        <td class="payment-cell">-${fmt(t.amount)}</td>
+        <td><button class="btn-icon delete" onclick="deleteTransaction('${t.id}')">Del</button></td>
+      </tr>`;
+  }).join('');
 }
+
+document.getElementById('open-add-income-modal').addEventListener('click', () => {
+  populateAccountDropdown('m-inc-account');
+  document.getElementById('m-inc-date').value = today();
+  document.getElementById('m-inc-desc').value = '';
+  document.getElementById('m-inc-amount').value = '';
+  openModal('modal-income');
+});
+
+document.getElementById('modal-income-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const desc    = document.getElementById('m-inc-desc').value.trim();
+  const amount  = parseFloat(document.getElementById('m-inc-amount').value);
+  const date    = document.getElementById('m-inc-date').value;
+  const toAccId = document.getElementById('m-inc-account').value;
+
+  if (!toAccId) { showToast('Please select an account.', 'error'); return; }
+
+  const acc = state.accounts.find(a => a.id === toAccId);
+  if (!acc) { showToast('Account not found.', 'error'); return; }
+
+  acc.balance = Number(acc.balance) + amount;
+  state.transactions.push({ id: uid(), type: 'income', description: desc, toAccount: toAccId, amount, date });
+  saveData();
+  closeModal('modal-income');
+  renderTransactions();
+  showToast('Income added!');
+});
 
 document.getElementById('open-add-payment-modal').addEventListener('click', () => {
   populateAccountDropdown('m-pay-account');
@@ -529,11 +573,10 @@ document.getElementById('modal-payment-form').addEventListener('submit', e => {
     showToast('Insufficient account balance!', 'error'); return;
   }
 
-  // Apply payment
   acc.balance = Number(acc.balance) - amount;
   cc.balance  = Math.max(0, Number(cc.balance) - amount);
 
-  state.transactions.push({ id: uid(), fromAccount: fromId, toCard: toId, amount, date });
+  state.transactions.push({ id: uid(), type: 'payment', fromAccount: fromId, toCard: toId, amount, date });
   saveData();
   closeModal('modal-payment');
   renderTransactions();
@@ -654,8 +697,8 @@ function renderSubscriptions() {
     const dueLabel = days < 0
       ? `Overdue (${s.nextDue})`
       : days === 0
-        ? 'Today!'
-        : `${s.nextDue} (${days}d)`;
+        ? `${s.nextDue} (Today!)`
+        : s.nextDue;
     return `
       <tr>
         <td><strong>${s.name}</strong></td>
