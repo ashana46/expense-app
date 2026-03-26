@@ -186,9 +186,14 @@ function renderDashboard() {
 
   // Populate quick-add dropdowns
   populateSourceDropdowns('qe-source');
+  populateAccountDropdown('qi-inc-account');
+  populateAccountDropdown('qi-pay-account');
+  populateCardDropdown('qi-pay-card');
 
-  // Set default date
-  document.getElementById('qe-date').value = today();
+  // Set default dates
+  document.getElementById('qe-date').value     = today();
+  document.getElementById('qi-inc-date').value = today();
+  document.getElementById('qi-pay-date').value = today();
 
   // Recent activity (last 10)
   const all = [
@@ -215,7 +220,7 @@ function renderDashboard() {
       return `
         <div class="activity-item">
           <div class="act-left">
-            <span class="act-desc">CC Payment ${categoryBadge('Payment')}</span>
+            <span class="act-desc">Credit Card Payment ${categoryBadge('Payment')}</span>
             <span class="act-meta">${item.date} &bull; ${getSourceLabel(item.fromAccount)} → ${getSourceLabel(item.toCard)}</span>
           </div>
           <span class="act-amount payment">-${fmt(item.amount)}</span>
@@ -243,18 +248,65 @@ document.getElementById('quick-expense-form').addEventListener('submit', e => {
   showToast('Expense added!');
 });
 
-/* ─── Quick Add Account (Dashboard) ─────────────── */
-document.getElementById('quick-account-form').addEventListener('submit', e => {
-  e.preventDefault();
-  const nickname = document.getElementById('qa-nickname').value.trim();
-  const type     = document.getElementById('qa-type').value;
-  const balance  = parseFloat(document.getElementById('qa-balance').value);
+/* ─── Dashboard Quick Tabs ───────────────────────── */
+document.querySelectorAll('.quick-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const card = tab.closest('.card');
+    card.querySelectorAll('.quick-tab').forEach(t => t.classList.remove('active'));
+    card.querySelectorAll('.quick-tab-panel').forEach(p => p.classList.add('hidden'));
+    tab.classList.add('active');
+    card.querySelector(`#${tab.dataset.tab}-form`).classList.remove('hidden');
+  });
+});
 
-  state.accounts.push({ id: uid(), nickname, type, balance });
+/* ─── Quick Add Income (Dashboard) ──────────────── */
+document.getElementById('quick-income-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const desc    = document.getElementById('qi-inc-desc').value.trim();
+  const amount  = parseFloat(document.getElementById('qi-inc-amount').value);
+  const toAccId = document.getElementById('qi-inc-account').value;
+  const date    = document.getElementById('qi-inc-date').value;
+
+  if (!toAccId) { showToast('Please select an account.', 'error'); return; }
+  const acc = state.accounts.find(a => a.id === toAccId);
+  if (!acc) { showToast('Account not found.', 'error'); return; }
+
+  acc.balance = Number(acc.balance) + amount;
+  state.transactions.push({ id: uid(), type: 'income', description: desc, toAccount: toAccId, amount, date });
   saveData();
   e.target.reset();
+  document.getElementById('qi-inc-date').value = today();
+  populateAccountDropdown('qi-inc-account');
   renderDashboard();
-  showToast('Account added!');
+  showToast('Income added!');
+});
+
+/* ─── Quick Credit Card Payment (Dashboard) ──────── */
+document.getElementById('quick-payment-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const fromId = document.getElementById('qi-pay-account').value;
+  const toId   = document.getElementById('qi-pay-card').value;
+  const amount = parseFloat(document.getElementById('qi-pay-amount').value);
+  const date   = document.getElementById('qi-pay-date').value;
+
+  if (!fromId) { showToast('Please select an account.', 'error'); return; }
+  if (!toId)   { showToast('Please select a credit card.', 'error'); return; }
+
+  const acc = state.accounts.find(a => a.id === fromId);
+  const cc  = state.creditCards.find(c => c.id === toId);
+  if (!acc || !cc) { showToast('Invalid selection.', 'error'); return; }
+  if (amount > Number(acc.balance)) { showToast('Insufficient account balance!', 'error'); return; }
+
+  acc.balance = Number(acc.balance) - amount;
+  cc.balance  = Math.max(0, Number(cc.balance) - amount);
+  state.transactions.push({ id: uid(), type: 'payment', fromAccount: fromId, toCard: toId, amount, date });
+  saveData();
+  e.target.reset();
+  document.getElementById('qi-pay-date').value = today();
+  populateAccountDropdown('qi-pay-account');
+  populateCardDropdown('qi-pay-card');
+  renderDashboard();
+  showToast('Payment recorded!');
 });
 
 /* ─── Expense Logic ─────────────────────────────── */
@@ -511,7 +563,7 @@ function renderTransactions() {
       <tr>
         <td>${t.date}</td>
         <td>${categoryBadge('Payment')}</td>
-        <td>CC Payment</td>
+        <td>Credit Card Payment</td>
         <td>${getSourceLabel(t.fromAccount)}</td>
         <td>${getSourceLabel(t.toCard)}</td>
         <td class="payment-cell">-${fmt(t.amount)}</td>

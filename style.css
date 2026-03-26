@@ -504,6 +504,36 @@ td {
 .toast.error   { border-left: 4px solid var(--danger); }
 .toast.hidden  { display: none; }
 
+/* ─── Quick Tabs (Dashboard) ───────────────────── */
+.quick-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.quick-tab {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 8px 16px 10px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+}
+
+.quick-tab:hover { color: var(--text); }
+
+.quick-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.quick-tab-panel.hidden { display: none; }
+
 /* ─── Monthly View ─────────────────────────────── */
 .month-nav {
   display: flex;
