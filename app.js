@@ -198,7 +198,7 @@ function renderDashboard() {
   // Recent activity (last 10)
   const all = [
     ...state.expenses.map(e => ({ ...e, _type: 'expense' })),
-    ...state.transactions.map(t => ({ ...t, _type: t.type || 'payment' })),
+    ...state.transactions.map(t => ({ ...t, _type: (t.type === 'income' || t.toAccount) ? 'income' : 'payment' })),
   ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
 
   const actEl = document.getElementById('recent-activity');
@@ -264,7 +264,8 @@ document.querySelectorAll('.quick-tab').forEach(tab => {
     card.querySelectorAll('.quick-tab').forEach(t => t.classList.remove('active'));
     card.querySelectorAll('.quick-tab-panel').forEach(p => p.classList.add('hidden'));
     tab.classList.add('active');
-    card.querySelector(`#${tab.dataset.tab}-form`).classList.remove('hidden');
+    const panel = document.getElementById(`${tab.dataset.tab}-form`);
+    if (panel) panel.classList.remove('hidden');
   });
 });
 
