@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Money Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar Nav -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="logo">&#9830; MoneyTracker</span>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-page="dashboard">Dashboard</button>
+        <button class="nav-btn" data-page="accounts">Accounts</button>
+        <button class="nav-btn" data-page="credit-cards">Credit Cards</button>
+        <button class="nav-btn" data-page="expenses">Expenses</button>
+        <button class="nav-btn" data-page="transactions">Transactions</button>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+
+      <!-- DASHBOARD PAGE -->
+      <section id="page-dashboard" class="page active">
+        <h1>Dashboard</h1>
+        <div class="summary-cards" id="summary-cards"></div>
+
+        <div class="dashboard-grid">
+          <!-- Quick Add Expense -->
+          <div class="card">
+            <h2>Quick Add Expense</h2>
+            <form id="quick-expense-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Description</label>
+                  <input type="text" id="qe-desc" placeholder="e.g. Flight to NYC" required />
+                </div>
+                <div class="form-group">
+                  <label>Amount ($)</label>
+                  <input type="number" id="qe-amount" placeholder="0.00" step="0.01" min="0.01" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Category</label>
+                  <select id="qe-category">
+                    <option value="Travel">Travel</option>
+                    <option value="Food & Dining">Food & Dining</option>
+                    <option value="Groceries">Groceries</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Health">Health</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Rent/Mortgage">Rent/Mortgage</option>
+                    <option value="Transportation">Transportation</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Paid From</label>
+                  <select id="qe-source">
+                    <option value="">-- Select Account/Card --</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="qe-date" />
+              </div>
+              <button type="submit" class="btn btn-primary">Add Expense</button>
+            </form>
+          </div>
+
+          <!-- Quick Add Account -->
+          <div class="card">
+            <h2>Quick Add Account</h2>
+            <form id="quick-account-form">
+              <div class="form-group">
+                <label>Nickname</label>
+                <input type="text" id="qa-nickname" placeholder="e.g. Chase Checking" required />
+              </div>
+              <div class="form-group">
+                <label>Type</label>
+                <select id="qa-type">
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Current Balance ($)</label>
+                <input type="number" id="qa-balance" placeholder="0.00" step="0.01" min="0" required />
+              </div>
+              <button type="submit" class="btn btn-primary">Add Account</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card mt">
+          <h2>Recent Activity</h2>
+          <div id="recent-activity" class="activity-list"></div>
+        </div>
+      </section>
+
+      <!-- ACCOUNTS PAGE -->
+      <section id="page-accounts" class="page">
+        <div class="page-header">
+          <h1>Bank Accounts</h1>
+          <button class="btn btn-primary" id="open-add-account-modal">+ Add Account</button>
+        </div>
+        <div id="accounts-list" class="cards-grid"></div>
+      </section>
+
+      <!-- CREDIT CARDS PAGE -->
+      <section id="page-credit-cards" class="page">
+        <div class="page-header">
+          <h1>Credit Cards</h1>
+          <button class="btn btn-primary" id="open-add-card-modal">+ Add Credit Card</button>
+        </div>
+        <div id="cards-list" class="cards-grid"></div>
+      </section>
+
+      <!-- EXPENSES PAGE -->
+      <section id="page-expenses" class="page">
+        <div class="page-header">
+          <h1>Expenses</h1>
+          <button class="btn btn-primary" id="open-add-expense-modal">+ Add Expense</button>
+        </div>
+        <div class="filter-bar">
+          <select id="filter-category">
+            <option value="">All Categories</option>
+            <option value="Travel">Travel</option>
+            <option value="Food & Dining">Food & Dining</option>
+            <option value="Groceries">Groceries</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Health">Health</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Rent/Mortgage">Rent/Mortgage</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div id="expenses-list" class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Paid From</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="expenses-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TRANSACTIONS PAGE -->
+      <section id="page-transactions" class="page">
+        <div class="page-header">
+          <h1>Transactions</h1>
+          <button class="btn btn-primary" id="open-add-payment-modal">+ Credit Card Payment</button>
+        </div>
+        <div id="transactions-list" class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>From Account</th>
+                <th>To Card</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="transactions-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL: Add Account -->
+  <div id="modal-account" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-account-title">Add Account</h2>
+        <button class="modal-close" data-modal="modal-account">&times;</button>
+      </div>
+      <form id="modal-account-form">
+        <input type="hidden" id="edit-account-id" />
+        <div class="form-group">
+          <label>Nickname</label>
+          <input type="text" id="m-acc-nickname" placeholder="e.g. Chase Checking" required />
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="m-acc-type">
+            <option value="checking">Checking</option>
+            <option value="savings">Savings</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Current Balance ($)</label>
+          <input type="number" id="m-acc-balance" placeholder="0.00" step="0.01" min="0" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-modal="modal-account">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Credit Card -->
+  <div id="modal-card" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-card-title">Add Credit Card</h2>
+        <button class="modal-close" data-modal="modal-card">&times;</button>
+      </div>
+      <form id="modal-card-form">
+        <input type="hidden" id="edit-card-id" />
+        <div class="form-group">
+          <label>Card Nickname</label>
+          <input type="text" id="m-card-nickname" placeholder="e.g. Chase Sapphire" required />
+        </div>
+        <div class="form-group">
+          <label>Amount Due ($)</label>
+          <input type="number" id="m-card-balance" placeholder="0.00" step="0.01" min="0" required />
+        </div>
+        <div class="form-group">
+          <label>Due Date</label>
+          <input type="date" id="m-card-due" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-modal="modal-card">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Expense (full) -->
+  <div id="modal-expense" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Add Expense</h2>
+        <button class="modal-close" data-modal="modal-expense">&times;</button>
+      </div>
+      <form id="modal-expense-form">
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="m-exp-desc" placeholder="e.g. Flight to NYC" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount ($)</label>
+            <input type="number" id="m-exp-amount" placeholder="0.00" step="0.01" min="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="m-exp-date" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="m-exp-category">
+            <option value="Travel">Travel</option>
+            <option value="Food & Dining">Food & Dining</option>
+            <option value="Groceries">Groceries</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Health">Health</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Rent/Mortgage">Rent/Mortgage</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Paid From</label>
+          <select id="m-exp-source" required>
+            <option value="">-- Select Account/Card --</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-modal="modal-expense">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Credit Card Payment -->
+  <div id="modal-payment" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Credit Card Payment</h2>
+        <button class="modal-close" data-modal="modal-payment">&times;</button>
+      </div>
+      <form id="modal-payment-form">
+        <div class="form-group">
+          <label>Pay From Account</label>
+          <select id="m-pay-account" required>
+            <option value="">-- Select Account --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pay To Card</label>
+          <select id="m-pay-card" required>
+            <option value="">-- Select Credit Card --</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Payment Amount ($)</label>
+            <input type="number" id="m-pay-amount" placeholder="0.00" step="0.01" min="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="m-pay-date" required />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-modal="modal-payment">Cancel</button>
+          <button type="submit" class="btn btn-primary">Make Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
