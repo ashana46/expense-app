@@ -20,6 +20,7 @@
         <button class="nav-btn" data-page="expenses">Expenses</button>
         <button class="nav-btn" data-page="transactions">Transactions</button>
         <button class="nav-btn" data-page="subscriptions">Subscriptions</button>
+        <button class="nav-btn" data-page="monthly">Monthly</button>
       </nav>
     </aside>
 
@@ -214,6 +215,46 @@
             </thead>
             <tbody id="subs-tbody"></tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- MONTHLY PAGE -->
+      <section id="page-monthly" class="page">
+        <div class="page-header">
+          <h1>Monthly Expenses</h1>
+          <div class="month-nav">
+            <button class="btn btn-secondary" id="month-prev">&#8592;</button>
+            <span id="month-label" class="month-label"></span>
+            <button class="btn btn-secondary" id="month-next">&#8594;</button>
+          </div>
+        </div>
+
+        <!-- Month summary row -->
+        <div class="summary-cards" id="monthly-summary"></div>
+
+        <!-- Category breakdown -->
+        <div class="card mt">
+          <h2>Spending by Category</h2>
+          <div id="category-breakdown"></div>
+        </div>
+
+        <!-- Expense list for month -->
+        <div class="card mt">
+          <h2>Expenses This Month</h2>
+          <div class="table-wrapper" style="border:none;background:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Paid From</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody id="monthly-expenses-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
