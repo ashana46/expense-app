@@ -264,7 +264,8 @@ document.querySelectorAll('.quick-tab').forEach(tab => {
     card.querySelectorAll('.quick-tab').forEach(t => t.classList.remove('active'));
     card.querySelectorAll('.quick-tab-panel').forEach(p => p.classList.add('hidden'));
     tab.classList.add('active');
-    card.querySelector(`#${tab.dataset.tab}-form`).classList.remove('hidden');
+    const panel = document.getElementById(`${tab.dataset.tab}-form`);
+    if (panel) panel.classList.remove('hidden');
   });
 });
 
