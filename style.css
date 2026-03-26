@@ -316,6 +316,19 @@ select option { background: var(--bg3); }
 
 .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
+.btn-success {
+  background: #16a34a;
+  color: #fff;
+}
+.btn-success:hover { background: #15803d; }
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+}
+
+.income-cell { font-weight: 600; color: var(--success); }
+
 /* ─── Filters ──────────────────────────────────── */
 .filter-bar {
   margin-bottom: 16px;
@@ -386,6 +399,7 @@ td {
 .badge-transport { background: rgba(20,184,166,0.15); color: #14b8a6; }
 .badge-other     { background: rgba(100,116,139,0.15);color: #64748b; }
 .badge-payment      { background: rgba(34,197,94,0.15);  color: #22c55e; }
+.badge-income       { background: rgba(34,197,94,0.2);   color: #16a34a; }
 .badge-subscription { background: rgba(56,189,248,0.15); color: #38bdf8; }
 
 /* ─── Activity List ────────────────────────────── */
