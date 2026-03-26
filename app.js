@@ -6,7 +6,7 @@ function loadData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch (e) { /* ignore */ }
-  return { accounts: [], creditCards: [], expenses: [], transactions: [] };
+  return { accounts: [], creditCards: [], expenses: [], transactions: [], subscriptions: [] };
 }
 
 function saveData() {
@@ -14,6 +14,8 @@ function saveData() {
 }
 
 let state = loadData();
+// Ensure subscriptions array exists for data migrated from older versions
+if (!state.subscriptions) state.subscriptions = [];
 
 /* ─── Utility ───────────────────────────────────── */
 function uid() {
@@ -45,6 +47,7 @@ function categoryBadge(cat) {
     'Utilities': 'utility',
     'Rent/Mortgage': 'rent',
     'Transportation': 'transport',
+    'Subscriptions': 'subscription',
     'Other': 'other',
     'Payment': 'payment',
   };
@@ -86,6 +89,7 @@ function renderPage(page) {
   if (page === 'credit-cards') renderCreditCards();
   if (page === 'expenses') renderExpenses();
   if (page === 'transactions') renderTransactions();
+  if (page === 'subscriptions') renderSubscriptions();
 }
 
 /* ─── Source Dropdowns ──────────────────────────── */
@@ -569,12 +573,164 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 });
 
 // Expose edit/delete functions to global scope (called from inline onclick)
-window.openEditAccount  = openEditAccount;
-window.deleteAccount    = deleteAccount;
-window.openEditCard     = openEditCard;
-window.deleteCard       = deleteCard;
-window.deleteExpense    = deleteExpense;
+window.openEditAccount   = openEditAccount;
+window.deleteAccount     = deleteAccount;
+window.openEditCard      = openEditCard;
+window.deleteCard        = deleteCard;
+window.deleteExpense     = deleteExpense;
 window.deleteTransaction = deleteTransaction;
+window.openEditSub       = openEditSub;
+window.deleteSub         = deleteSub;
+
+/* ─── Subscriptions ─────────────────────────────── */
+
+// Advance a date string by the given frequency, returning new YYYY-MM-DD
+function advanceByFrequency(dateStr, freq) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (freq === 'monthly')   d.setMonth(d.getMonth() + 1);
+  if (freq === 'quarterly') d.setMonth(d.getMonth() + 3);
+  if (freq === 'annually')  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// On app load: auto-generate expenses for any subscriptions that are past due
+function processSubscriptions() {
+  const todayStr = today();
+  let generated = 0;
+
+  state.subscriptions.forEach(sub => {
+    // Walk forward until nextDue is in the future
+    while (sub.nextDue <= todayStr) {
+      addExpense({
+        desc: sub.name + ' (subscription)',
+        amount: sub.amount,
+        cat: sub.category,
+        source: sub.source,
+        date: sub.nextDue,
+      });
+      sub.nextDue = advanceByFrequency(sub.nextDue, sub.frequency);
+      generated++;
+    }
+  });
+
+  if (generated > 0) {
+    saveData();
+  }
+  return generated;
+}
+
+function freqLabel(f) {
+  return { monthly: 'Monthly', quarterly: 'Quarterly', annually: 'Annually' }[f] || f;
+}
+
+function renderSubscriptions() {
+  populateSourceDropdowns('m-sub-source');
+  document.getElementById('m-sub-due').value = today();
+
+  const alertEl = document.getElementById('sub-alert');
+  // Show upcoming subscriptions due within 7 days
+  const upcoming = state.subscriptions.filter(s => {
+    const d = daysUntil(s.nextDue);
+    return d >= 0 && d <= 7;
+  });
+  if (upcoming.length) {
+    alertEl.className = 'sub-alert';
+    alertEl.innerHTML = '&#9888; Upcoming: ' + upcoming.map(s =>
+      `<strong>${s.name}</strong> due ${s.nextDue} (${fmt(s.amount)})`
+    ).join(' &bull; ');
+  } else {
+    alertEl.className = 'sub-alert hidden';
+  }
+
+  const tbody = document.getElementById('subs-tbody');
+  if (!state.subscriptions.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No subscriptions yet.</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = state.subscriptions.map(s => {
+    const days = daysUntil(s.nextDue);
+    const dueClass = days < 0 ? 'overdue' : days <= 3 ? 'due-soon' : '';
+    const dueLabel = days < 0
+      ? `Overdue (${s.nextDue})`
+      : days === 0
+        ? 'Today!'
+        : `${s.nextDue} (${days}d)`;
+    return `
+      <tr>
+        <td><strong>${s.name}</strong></td>
+        <td>${categoryBadge(s.category)}</td>
+        <td class="amount-cell">-${fmt(s.amount)}</td>
+        <td><span class="freq-badge">${freqLabel(s.frequency)}</span></td>
+        <td class="${dueClass}">${dueLabel}</td>
+        <td>${getSourceLabel(s.source)}</td>
+        <td>
+          <button class="btn-icon" onclick="openEditSub('${s.id}')">Edit</button>
+          <button class="btn-icon delete" onclick="deleteSub('${s.id}')">Del</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+document.getElementById('open-add-sub-modal').addEventListener('click', () => {
+  document.getElementById('modal-sub-title').textContent = 'Add Subscription';
+  document.getElementById('edit-sub-id').value = '';
+  document.getElementById('modal-sub-form').reset();
+  document.getElementById('m-sub-due').value = today();
+  populateSourceDropdowns('m-sub-source');
+  openModal('modal-sub');
+});
+
+document.getElementById('modal-sub-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const id       = document.getElementById('edit-sub-id').value;
+  const name     = document.getElementById('m-sub-name').value.trim();
+  const amount   = parseFloat(document.getElementById('m-sub-amount').value);
+  const freq     = document.getElementById('m-sub-freq').value;
+  const nextDue  = document.getElementById('m-sub-due').value;
+  const category = document.getElementById('m-sub-category').value;
+  const source   = document.getElementById('m-sub-source').value;
+
+  if (!source) { showToast('Please select an account or card.', 'error'); return; }
+
+  if (id) {
+    const s = state.subscriptions.find(s => s.id === id);
+    if (s) { s.name = name; s.amount = amount; s.frequency = freq; s.nextDue = nextDue; s.category = category; s.source = source; }
+  } else {
+    state.subscriptions.push({ id: uid(), name, amount, frequency: freq, nextDue, category, source });
+  }
+  saveData();
+  closeModal('modal-sub');
+  renderSubscriptions();
+  showToast(id ? 'Subscription updated!' : 'Subscription added!');
+});
+
+function openEditSub(id) {
+  const s = state.subscriptions.find(s => s.id === id);
+  if (!s) return;
+  document.getElementById('modal-sub-title').textContent = 'Edit Subscription';
+  document.getElementById('edit-sub-id').value    = s.id;
+  document.getElementById('m-sub-name').value     = s.name;
+  document.getElementById('m-sub-amount').value   = s.amount;
+  document.getElementById('m-sub-freq').value     = s.frequency;
+  document.getElementById('m-sub-due').value      = s.nextDue;
+  document.getElementById('m-sub-category').value = s.category;
+  populateSourceDropdowns('m-sub-source');
+  document.getElementById('m-sub-source').value   = s.source;
+  openModal('modal-sub');
+}
+
+function deleteSub(id) {
+  if (!confirm('Delete this subscription? Future charges will no longer be auto-generated.')) return;
+  state.subscriptions = state.subscriptions.filter(s => s.id !== id);
+  saveData();
+  renderSubscriptions();
+  showToast('Subscription deleted.', 'error');
+}
 
 /* ─── Init ──────────────────────────────────────── */
+const autoGenCount = processSubscriptions();
 renderDashboard();
+if (autoGenCount > 0) {
+  showToast(`${autoGenCount} subscription expense(s) auto-recorded!`);
+}

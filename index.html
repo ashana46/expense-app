@@ -19,6 +19,7 @@
         <button class="nav-btn" data-page="credit-cards">Credit Cards</button>
         <button class="nav-btn" data-page="expenses">Expenses</button>
         <button class="nav-btn" data-page="transactions">Transactions</button>
+        <button class="nav-btn" data-page="subscriptions">Subscriptions</button>
       </nav>
     </aside>
 
@@ -143,6 +144,7 @@
             <option value="Utilities">Utilities</option>
             <option value="Rent/Mortgage">Rent/Mortgage</option>
             <option value="Transportation">Transportation</option>
+            <option value="Subscriptions">Subscriptions</option>
             <option value="Other">Other</option>
           </select>
         </div>
@@ -183,6 +185,31 @@
               </tr>
             </thead>
             <tbody id="transactions-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SUBSCRIPTIONS PAGE -->
+      <section id="page-subscriptions" class="page">
+        <div class="page-header">
+          <h1>Subscriptions</h1>
+          <button class="btn btn-primary" id="open-add-sub-modal">+ Add Subscription</button>
+        </div>
+        <div id="sub-alert" class="sub-alert hidden"></div>
+        <div id="subscriptions-list" class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Frequency</th>
+                <th>Next Due</th>
+                <th>Paid From</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="subs-tbody"></tbody>
           </table>
         </div>
       </section>
@@ -335,6 +362,66 @@
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" data-modal="modal-payment">Cancel</button>
           <button type="submit" class="btn btn-primary">Make Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Add/Edit Subscription -->
+  <div id="modal-sub" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-sub-title">Add Subscription</h2>
+        <button class="modal-close" data-modal="modal-sub">&times;</button>
+      </div>
+      <form id="modal-sub-form">
+        <input type="hidden" id="edit-sub-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Subscription Name</label>
+            <input type="text" id="m-sub-name" placeholder="e.g. Netflix" required />
+          </div>
+          <div class="form-group">
+            <label>Amount ($)</label>
+            <input type="number" id="m-sub-amount" placeholder="0.00" step="0.01" min="0.01" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Frequency</label>
+            <select id="m-sub-freq">
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="annually">Annually</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Next Due Date</label>
+            <input type="date" id="m-sub-due" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="m-sub-category">
+            <option value="Subscriptions">Subscriptions</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Health">Health</option>
+            <option value="Food & Dining">Food & Dining</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Deduct From</label>
+          <select id="m-sub-source" required>
+            <option value="">-- Select Account/Card --</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-modal="modal-sub">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
         </div>
       </form>
     </div>
