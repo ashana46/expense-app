@@ -198,7 +198,7 @@ function renderDashboard() {
   // Recent activity (last 10)
   const all = [
     ...state.expenses.map(e => ({ ...e, _type: 'expense' })),
-    ...state.transactions.map(t => ({ ...t, _type: t.type || 'payment' })),
+    ...state.transactions.map(t => ({ ...t, _type: (t.type === 'income' || t.toAccount) ? 'income' : 'payment' })),
   ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
 
   const actEl = document.getElementById('recent-activity');
