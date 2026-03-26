@@ -91,6 +91,7 @@ function renderPage(page) {
   if (page === 'expenses') renderExpenses();
   if (page === 'transactions') renderTransactions();
   if (page === 'subscriptions') renderSubscriptions();
+  if (page === 'monthly') renderMonthly();
 }
 
 /* ─── Source Dropdowns ──────────────────────────── */
@@ -770,6 +771,121 @@ function deleteSub(id) {
   renderSubscriptions();
   showToast('Subscription deleted.', 'error');
 }
+
+/* ─── Monthly View ──────────────────────────────── */
+// Track which month is being viewed (YYYY-MM string)
+let monthlyViewKey = today().slice(0, 7); // e.g. "2026-03"
+
+const MONTH_NAMES = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+
+// Category display order and colors for the breakdown bars
+const CAT_COLORS = {
+  'Travel':         '#63b3ed',
+  'Food & Dining':  '#f59e0b',
+  'Groceries':      '#22c55e',
+  'Shopping':       '#ec4899',
+  'Entertainment':  '#a855f7',
+  'Health':         '#ef4444',
+  'Utilities':      '#94a3b8',
+  'Rent/Mortgage':  '#fb923c',
+  'Transportation': '#14b8a6',
+  'Subscriptions':  '#38bdf8',
+  'Other':          '#64748b',
+};
+
+function renderMonthly() {
+  const [year, month] = monthlyViewKey.split('-').map(Number);
+  document.getElementById('month-label').textContent =
+    `${MONTH_NAMES[month - 1]} ${year}`;
+
+  // Filter expenses for this month
+  const monthExpenses = state.expenses.filter(e => e.date.slice(0, 7) === monthlyViewKey);
+
+  const total    = monthExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  const count    = monthExpenses.length;
+  const avgPerDay = (() => {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    return total / daysInMonth;
+  })();
+
+  // Summary cards
+  document.getElementById('monthly-summary').innerHTML = `
+    <div class="summary-card">
+      <div class="label">Total Spent</div>
+      <div class="value negative">${fmt(total)}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">No. of Expenses</div>
+      <div class="value neutral">${count}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Avg / Day</div>
+      <div class="value negative">${fmt(avgPerDay)}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Largest Expense</div>
+      <div class="value negative">${count ? fmt(Math.max(...monthExpenses.map(e => Number(e.amount)))) : '$0.00'}</div>
+    </div>
+  `;
+
+  // Group by category
+  const byCat = {};
+  monthExpenses.forEach(e => {
+    byCat[e.category] = (byCat[e.category] || 0) + Number(e.amount);
+  });
+  const sorted = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+
+  const breakdownEl = document.getElementById('category-breakdown');
+  if (!sorted.length) {
+    breakdownEl.innerHTML = '<div class="empty-state">No expenses this month.</div>';
+  } else {
+    breakdownEl.innerHTML = sorted.map(([cat, amt]) => {
+      const pct = total > 0 ? (amt / total * 100).toFixed(1) : 0;
+      const color = CAT_COLORS[cat] || '#64748b';
+      return `
+        <div class="cat-row">
+          <div class="cat-row-header">
+            <span class="cat-row-name">${categoryBadge(cat)}</span>
+            <span class="cat-row-meta">${fmt(amt)} <span class="cat-pct">${pct}%</span></span>
+          </div>
+          <div class="cat-bar-bg">
+            <div class="cat-bar-fill" style="width:${pct}%;background:${color};"></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Expense table for the month
+  const sorted_exp = [...monthExpenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const tbody = document.getElementById('monthly-expenses-tbody');
+  if (!sorted_exp.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">No expenses this month.</div></td></tr>';
+  } else {
+    tbody.innerHTML = sorted_exp.map(e => `
+      <tr>
+        <td>${e.date}</td>
+        <td>${e.description}</td>
+        <td>${categoryBadge(e.category)}</td>
+        <td>${getSourceLabel(e.source)}</td>
+        <td class="amount-cell">-${fmt(e.amount)}</td>
+      </tr>`).join('');
+  }
+}
+
+document.getElementById('month-prev').addEventListener('click', () => {
+  const [y, m] = monthlyViewKey.split('-').map(Number);
+  const d = new Date(y, m - 2, 1); // go back one month
+  monthlyViewKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  renderMonthly();
+});
+
+document.getElementById('month-next').addEventListener('click', () => {
+  const [y, m] = monthlyViewKey.split('-').map(Number);
+  const d = new Date(y, m, 1); // go forward one month
+  monthlyViewKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  renderMonthly();
+});
 
 /* ─── Init ──────────────────────────────────────── */
 const autoGenCount = processSubscriptions();
